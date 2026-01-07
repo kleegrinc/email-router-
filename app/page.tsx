@@ -12,7 +12,7 @@ export default function Home() {
         </p>
         <div className="flex justify-center">
           <a
-            href="https://marketplace.gohighlevel.com/oauth/chooselocation?response_type=code&redirect_uri=https%3A%2F%2Fklegger-email-router.vercel.app%2Fauth%2Fredirect&client_id=695e467f9a78b1de890ab988-mk3yab3q&scope=contacts.readonly+conversations.readonly+conversations%2Fmessage.readonly+locations.readonly+workflows.readonly&version_id=695e467f9a78b1de890ab988"
+            href="https://marketplace.gohighlevel.com/oauth/chooselocation?response_type=code&redirect_uri=https%3A%2F%2Femail-router.onrender.com%2Fauth%2Fredirect&client_id=695e467f9a78b1de890ab988-mk3yab3q&scope=contacts.readonly+conversations.readonly+conversations%2Fmessage.readonly+locations.readonly+workflows.readonly&version_id=695e467f9a78b1de890ab988"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center px-6 py-3 text-lg font-medium rounded-full text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition-colors"
