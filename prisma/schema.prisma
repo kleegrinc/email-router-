@@ -1,0 +1,36 @@
+// prisma/schema.prisma
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Token {
+  id           Int       @id @default(autoincrement())
+  appId        String
+  accessToken  String?
+  refreshToken String?
+  userType     String?
+  companyId    String?
+  locationId   String    @unique
+  userId       String?
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Trigger {
+  id          Int      @id @default(autoincrement())
+  ghlId       String   @unique
+  locationId  String
+  key         String
+  filters     Json?
+  targetUrl   String
+  eventType   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
