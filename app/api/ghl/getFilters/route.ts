@@ -6,7 +6,10 @@ import { getCustomFields, getTags } from "../../../../lib/ghl";
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
+        console.log("Received Filters Event:", JSON.stringify(body, null, 2));
+
         const locationId = body?.extras?.locationId;
+        console.log("locationId", locationId)
 
         if (!locationId) {
             return NextResponse.json({ message: "locationId within extras object is required" }, { status: 400 });
