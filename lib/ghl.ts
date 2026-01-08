@@ -538,6 +538,25 @@ export async function getTags(locationId: string, accessToken: string) {
     }
 }
 
+
+export async function getContact(accessToken: string, contactId: string) {
+    try {
+        const contactRes = await axios.get(
+            `https://services.leadconnectorhq.com/contacts/${contactId}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    Version: "2021-07-28",
+                },
+            }
+        );
+        return contactRes.data?.contact || null;
+    } catch (err: any) {
+        console.error("Error fetching contact:", err.message);
+        return null;
+    }
+}
+
 export async function getAccountIdField(ghl: GHLAuth, contactId: string) {
     try {
         // 1. Fetch contact details

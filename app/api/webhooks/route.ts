@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
 import axios from "axios";
 import { getToken } from "../../../lib/token";
+import { getContact, getTags } from "../../../lib/ghl";
 
 function matchFilter(filter: any, eventData: any): boolean {
     const field = filter.field;
@@ -66,7 +67,7 @@ function matchFilter(filter: any, eventData: any): boolean {
     return true;
 }
 
-function transformPayload(inbound: any) {
+function transformPayload(inbound: any, has_tag_name: string) {
     let to = inbound.to;
     if (Array.isArray(inbound.to) && inbound.to.length > 0) {
         to = inbound.to[0];
@@ -95,7 +96,8 @@ function transformPayload(inbound: any) {
         threadId: inbound.threadId,
         subject: inbound.subject,
         to: to,
-        conversationProviderId: inbound.conversationProviderId
+        conversationProviderId: inbound.conversationProviderId,
+        has_tag: has_tag_name || "tag"
     };
 }
 
@@ -165,6 +167,8 @@ export async function POST(req: NextRequest) {
 
         const executionResults = [];
 
+        let has_tag_name = "";
+
         for (const trigger of triggers) {
             let run = true;
             // Filters check
@@ -172,9 +176,84 @@ export async function POST(req: NextRequest) {
                 const filterArray = Array.isArray(trigger.filters) ? trigger.filters : [trigger.filters];
                 console.log(`Checking filters for trigger ${trigger.ghlId}`, JSON.stringify(filterArray, null, 2));
 
+                // Check if we need to fetch contact details for tag filtering
+                const needsContactFetch = filterArray.some((f: any) => f.field === 'has_tag' || f.field === "doesn't_has_tag");
+                let contactData: any = null;
+                let locationTags: any[] = [];
+
+                if (needsContactFetch && body.contactId && accessToken) {
+                    try {
+                        const [contact, tags] = await Promise.all([
+                            getContact(accessToken, body.contactId),
+                            getTags(locationId, accessToken)
+                        ]);
+                        contactData = contact;
+                        locationTags = tags;
+                    } catch (err) {
+                        console.error("Error fetching contact or tags for filtering:", err);
+                    }
+                }
+
+                // console.log("contactData", contactData)
+                // console.log("locationTags", locationTags)
+
                 for (const f of filterArray) {
                     const filter = f as any;
-                    const match = matchFilter(filter, body);
+                    let match = false;
+
+                    if (filter.field === 'has_tag') {
+                        if (!contactData) {
+                            console.log(`Contact data missing for tag filter ${filter.field}. Assuming mismatch.`);
+                            match = false;
+                        } else {
+                            const operator = filter.operator;
+
+                            // HighLevel usually sends the Tag NAME in the value for select fields if the option value was just the name.
+                            // But in getFilters we set value: tag.id. So we expect ID here.
+                            const tagValueCheck = filter.value;
+
+                            // We need to match against the Contact's tags which are an array of Strings (Names).
+                            // So we must resolve the tag ID from the filter to a Name.
+                            // If the filter value is already a name (legacy or other), we handle that too.
+
+                            let targetTagName = String(tagValueCheck).toLowerCase();
+                            has_tag_name = targetTagName;
+
+                            // Try to find if the value corresponds to an ID in our fetched tags list
+                            const tagObj = locationTags.find(t => t.name === tagValueCheck);
+                            if (tagObj) {
+                                targetTagName = tagObj.name;
+                            }
+
+                            const contactTags = (contactData.tags || []).map((t: string) => t);
+                            const hasTag = contactTags.includes(targetTagName);
+
+                            console.log(`[Tag Check] Target: '${targetTagName}', ContactTags: ${JSON.stringify(contactTags)}, HasTag: ${hasTag}`);
+
+                            // Operator Handling
+                            if (operator === '==' || operator === 'string-contains-any-of' || operator === 'array-contains') {
+                                match = hasTag;
+                            } else if (operator === '!=') {
+                                match = !hasTag;
+                            } else if (operator === 'has_value') {
+                                // "Has Tag" -> "Is Not Empty" ? usually means "User has ANY tag" or "This filter field is set".
+                                // In the context of "Has Tag" field:
+                                // If the user selects "Has Tag" is not empty... it implies "Contact has at least one tag"?
+                                match = contactTags.length > 0;
+                            } else if (operator === 'has_no_value') {
+                                match = contactTags.length === 0;
+                            } else {
+                                // Fallback
+                                match = hasTag;
+                            }
+                        }
+                    } else {
+                        // Standard field match
+                        match = matchFilter(filter, body);
+                    }
+
+                    // console.log("match", match)
+
                     console.log(`Filter check - Field: ${filter.field}, Operator: ${filter.operator}, Value: ${filter.value}, Matched: ${match}`);
 
                     if (!match) {
@@ -187,7 +266,7 @@ export async function POST(req: NextRequest) {
 
             if (run) {
                 console.log(`Executing Trigger ${trigger.ghlId}`);
-                const payload = transformPayload(body);
+                const payload = transformPayload(body, has_tag_name);
                 console.log(`Payload being sent to ${trigger.targetUrl}:`, JSON.stringify(payload, null, 2));
 
                 try {

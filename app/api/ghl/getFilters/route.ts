@@ -68,13 +68,6 @@ export async function POST(req: NextRequest) {
                 fieldType: "select",
                 required: false,
                 options: tagOptions
-            },
-            {
-                field: "doesn't_has_tag",
-                title: "Doesn't Has Tag",
-                fieldType: "select",
-                required: false,
-                options: tagOptions
             }
         ];
 
