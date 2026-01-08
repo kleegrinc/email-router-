@@ -6,7 +6,7 @@ import { getCustomFields, getTags } from "../../../../lib/ghl";
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        console.log("Received Filters Event:", JSON.stringify(body, null, 2));
+        console.log("Received Filters Event:", body);
 
         const locationId = body?.extras?.locationId;
         console.log("locationId", locationId)
