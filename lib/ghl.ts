@@ -518,6 +518,26 @@ export async function getCustomFields(locationId: string, accessToken: string) {
     }
 }
 
+
+export async function getTags(locationId: string, accessToken: string) {
+    try {
+        const res = await axios.get(
+            `https://services.leadconnectorhq.com/locations/${locationId}/tags`,
+            {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    Version: "2021-07-28",
+                },
+            }
+        );
+
+        return res.data.tags || [];
+    } catch (err: any) {
+        console.error("Error fetching tags:", err.message);
+        return [];
+    }
+}
+
 export async function getAccountIdField(ghl: GHLAuth, contactId: string) {
     try {
         // 1. Fetch contact details
