@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 
 const trigger_keys = {
-    "email_router": "email_router"
+    "email_router": "email_router",
+    "email_router_dynamic": "email_router_dynamic"
 };
 
 export async function POST(req: NextRequest) {
