@@ -56,12 +56,22 @@ const Index = () => {
                 refresh_token: ghlData.refresh_token,
                 userType: ghlData.userType,
                 companyId: ghlData.companyId,
-                locationId: ghlData.locationId,
+                locationId: ghlData.locationId || "",
                 userId: ghlData.userId,
                 is_bulk_installed: ghlData.isBulkInstallation,
             });
 
-            if (!saveResponse?.data?.success) {
+            // Log backend response for debugging — some responses return { results } instead of { success }
+            console.log("save-token response:", saveResponse?.status, saveResponse?.data);
+
+            if (saveResponse.status !== 200 && saveResponse.status !== 201) {
+                setMessage("Error while saving the token to DB.");
+                setLoading(false);
+                return;
+            }
+
+            // Consider success if backend returns `success: true` or returns `results` (bulk install)
+            if (!saveResponse?.data?.success && !saveResponse?.data?.results) {
                 setMessage("Error while saving the token to DB.");
                 setLoading(false);
                 return;
@@ -70,18 +80,10 @@ const Index = () => {
             // Step 3: Success
             setLoading(false);
             setMessage("✅ App Installed Successfully!");
-            setLocationId(ghlData.locationId);
 
-            // Step 4: Countdown & Redirect
-            let counter = 3;
-            const interval = setInterval(() => {
-                counter -= 1;
-                setCountdown(counter);
-                if (counter === 0) {
-                    clearInterval(interval);
-                    window.location.href = `https://app.gohighlevel.com/v2/location/${ghlData.locationId}/integration/${app_id}`;
-                }
-            }, 1000);
+            // Auto go back to previous page (if available). If no history entry, fall back to root.
+
+
         } catch (error) {
             console.error(error);
             setMessage("❌ Installation failed. Check console for details.");
@@ -99,38 +101,18 @@ const Index = () => {
 
     return (
         <div className="flex flex-col gap-6 w-full h-[100vh] justify-center items-center text-center bg-gray-50">
-            {loading && (
+            {loading ? (
                 <div className="flex flex-col items-center">
                     {/* Spinner */}
                     <div className="w-12 h-12 border-4 border-gray-300 border-t-blue-600 rounded-full animate-spin mb-4"></div>
                     <h1 className="text-2xl font-semibold text-gray-700">{message}</h1>
                 </div>
-            )}
+            )
 
-            {!loading && (
-                <>
-                    <h1 className="text-3xl font-bold text-gray-800">{message}</h1>
+                :
+                <h1 className="text-3xl font-bold text-gray-800">{message}</h1>
 
-                    {locationId && (
-                        <>
-                            <p className="text-gray-600 text-lg">
-                                Redirecting to configuration page in{" "}
-                                <span className="font-semibold text-blue-600">{countdown}</span>{" "}
-                                second{countdown !== 1 && "s"}...
-                            </p>
-
-                            {/* <a
-                                href={`https://app.gohighlevel.com/v2/location/${locationId}/integration/${app_id}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition mt-2"
-                            >
-                                Open Configuration Manually
-                            </a> */}
-                        </>
-                    )}
-                </>
-            )}
+            }
         </div>
     );
 };

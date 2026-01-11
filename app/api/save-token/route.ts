@@ -1,7 +1,11 @@
 /* eslint-disable */
 
+import axios from "axios";
+/* eslint-disable */
+
 import { prisma } from "../../../lib/prisma";
 import { NextResponse } from "next/server";
+import { getLocationAccessToken } from "../../../lib/token";
 
 export async function POST(req: Request) {
     try {
@@ -17,6 +21,68 @@ export async function POST(req: Request) {
             userId
         } = data;
 
+        // If companyId + appId + access_token provided, fetch installed locations
+        if (companyId && appId && access_token) {
+            const url = `https://services.leadconnectorhq.com/oauth/installedLocations?companyId=${encodeURIComponent(companyId)}&appId=${encodeURIComponent(appId)}`;
+
+            const resp = await axios.get(url, {
+                headers: {
+                    Accept: "application/json",
+                    Version: "2021-07-28",
+                    Authorization: `Bearer ${access_token}`,
+                },
+            });
+
+            const locations = resp.data?.locations || resp.data?.installedLocations || resp.data || [];
+            const locArray = Array.isArray(locations) ? locations : [locations];
+
+            const results: any[] = [];
+
+            for (const loc of locArray) {
+                const locId = loc?.id || loc?.locationId || loc?.location_id || loc?._id;
+                if (!locId) continue;
+
+                const tokenRes: any = await getLocationAccessToken(locId, { access_token, company_id: companyId } as any);
+
+                if (!tokenRes || !tokenRes.success) {
+                    results.push({ locationId: locId, success: false, error: tokenRes?.data || 'failed to fetch' });
+                    continue;
+                }
+
+                const locAccessToken = tokenRes.data?.access_token;
+                const locRefreshToken = tokenRes.data?.refresh_token;
+                const expiresIn = tokenRes.data?.expires_in;
+
+                const tokenRecord = await prisma.token.upsert({
+                    where: { locationId: locId },
+                    update: {
+                        appId,
+                        accessToken: locAccessToken,
+                        refreshToken: locRefreshToken,
+                        userType,
+                        companyId,
+                        userId,
+                        expiresAt: expiresIn ? new Date(Date.now() + expiresIn * 1000) : new Date(Date.now() + 23 * 3600 * 1000),
+                    },
+                    create: {
+                        appId,
+                        accessToken: locAccessToken,
+                        refreshToken: locRefreshToken,
+                        userType,
+                        companyId,
+                        locationId: locId,
+                        userId,
+                        expiresAt: expiresIn ? new Date(Date.now() + expiresIn * 1000) : new Date(Date.now() + 23 * 3600 * 1000),
+                    },
+                });
+
+                results.push({ locationId: locId, success: true, data: tokenRecord });
+            }
+
+            return NextResponse.json({ success: true, results });
+        }
+
+        // Fallback: require locationId + access_token (existing behavior)
         if (!locationId || !access_token) {
             return NextResponse.json(
                 { error: "Missing required fields: locationId or access_token" },
@@ -24,28 +90,13 @@ export async function POST(req: Request) {
             );
         }
 
-        //  console.log("Data received from GHL:", body);
-        //   userId: 'mAc1ft72fCrPGPUq1YXh',
-        // attachments: [],
-        // contactId: 'RcoZ2SiWcOY3GPei4kDG',
-        // locationId: 'JVFtHaeVMYmr2OyuI0vj',
-        // messageId: 'Mm24Ycdo3g8l46lKmYPG',
-        // type: 'SMS',
-        // conversationId: 'v30ALgPBDwUIKmgcKJeQ',
-        // phone: '+92543051240',
-        // message: 'Hi',
-        // customUserId: '',
-        // conversationProviderId: '68f4b8c5a90a31716dae7442'
-
-
-        // Save or update the record
         const tokenRecord = await prisma.token.upsert({
             where: { locationId },
             update: {
                 appId,
                 accessToken: access_token,
                 refreshToken: refresh_token,
-                userType,
+                userType: locationId !== "" && locationId !== null ? "Location" : "Company",
                 companyId,
                 userId,
                 expiresAt: new Date(Date.now() + 23 * 3600 * 1000), // 23 hours from now
@@ -54,7 +105,7 @@ export async function POST(req: Request) {
                 appId,
                 accessToken: access_token,
                 refreshToken: refresh_token,
-                userType,
+                userType: locationId !== "" && locationId !== null ? "Location" : "Company",
                 companyId,
                 locationId,
                 userId,
