@@ -125,8 +125,8 @@ export async function POST(req: NextRequest) {
         // }
 
 
-        console.log("Received GHL Inbound Message Webhook for location:", locationId);
-        console.log("Incoming Webhook Body:", JSON.stringify(body, null, 2));
+        // console.log("Received GHL Inbound Message Webhook for location:", locationId);
+        // console.log("Incoming Webhook Body:", JSON.stringify(body, null, 2));
 
         if (!locationId) {
             return NextResponse.json({ message: "locationId missing" }, { status: 400 });

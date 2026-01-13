@@ -22,11 +22,9 @@ export async function POST(req: Request) {
         } = data;
 
 
-        console.log("app_install_data", data);
-
         // If companyId + appId + access_token provided, fetch installed locations
         if (userType === "Company" || userType === "Agency" && companyId && appId && access_token) {
-            const url = `https://services.leadconnectorhq.com/oauth/installedLocations?companyId=${encodeURIComponent(companyId)}&appId=${encodeURIComponent(appId)}`;
+            const url = `https://services.leadconnectorhq.com/oauth/installedLocations?companyId=${encodeURIComponent(companyId)}&appId=${encodeURIComponent(appId)}&limit=500&isInstalled=true`;
 
             const resp = await axios.get(url, {
                 headers: {

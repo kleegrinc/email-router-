@@ -49,7 +49,7 @@ const Index = () => {
                 return;
             }
 
-            console.log("ghlData", ghlData);
+            // console.log("ghlData", ghlData);
 
             // Step 2: Save Token to Your Backend
             const saveResponse = await axios.post("/api/save-token", {
@@ -64,7 +64,7 @@ const Index = () => {
             });
 
             // Log backend response for debugging — some responses return { results } instead of { success }
-            console.log("save-token response:", saveResponse?.status, saveResponse?.data);
+            // console.log("save-token response:", saveResponse?.status, saveResponse?.data);
 
             if (saveResponse.status !== 200 && saveResponse.status !== 201) {
                 setMessage("Error while saving the token to DB.");
