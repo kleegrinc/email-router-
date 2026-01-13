@@ -49,6 +49,8 @@ const Index = () => {
                 return;
             }
 
+            console.log("ghlData", ghlData);
+
             // Step 2: Save Token to Your Backend
             const saveResponse = await axios.post("/api/save-token", {
                 appId: app_id,

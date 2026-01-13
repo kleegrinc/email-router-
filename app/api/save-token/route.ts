@@ -21,8 +21,11 @@ export async function POST(req: Request) {
             userId
         } = data;
 
+
+        console.log("app_install_data", data);
+
         // If companyId + appId + access_token provided, fetch installed locations
-        if (companyId && appId && access_token) {
+        if (userType === "Company" || userType === "Agency" && companyId && appId && access_token) {
             const url = `https://services.leadconnectorhq.com/oauth/installedLocations?companyId=${encodeURIComponent(companyId)}&appId=${encodeURIComponent(appId)}`;
 
             const resp = await axios.get(url, {
@@ -96,7 +99,7 @@ export async function POST(req: Request) {
                 appId,
                 accessToken: access_token,
                 refreshToken: refresh_token,
-                userType: locationId !== "" && locationId !== null ? "Location" : "Company",
+                userType: userType,
                 companyId,
                 userId,
                 expiresAt: new Date(Date.now() + 23 * 3600 * 1000), // 23 hours from now
@@ -105,7 +108,7 @@ export async function POST(req: Request) {
                 appId,
                 accessToken: access_token,
                 refreshToken: refresh_token,
-                userType: locationId !== "" && locationId !== null ? "Location" : "Company",
+                userType: userType,
                 companyId,
                 locationId,
                 userId,
