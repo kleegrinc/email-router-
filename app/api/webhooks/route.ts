@@ -5,9 +5,16 @@ import { getToken } from "../../../lib/token";
 import { getContact, getTags } from "../../../lib/ghl";
 
 function matchFilter(filter: any, eventData: any): boolean {
+
+    console.log("eventData", eventData)
+
+    console.log("filter_data", filter)
+
     const field = filter.field;
     const operator = filter.operator;
     const value = filter.value;
+
+    console.log("filter_field", field)
 
     let actualValue = eventData[field];
 
@@ -248,6 +255,8 @@ export async function POST(req: NextRequest) {
                             }
                         }
                     } else {
+                        console.log("body_eventData", body)
+                        console.log("filter_data", filter)
                         // Standard field match
                         match = matchFilter(filter, body);
                     }
