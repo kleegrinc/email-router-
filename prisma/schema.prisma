@@ -33,4 +33,6 @@ model Trigger {
   eventType   String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([locationId, eventType, key])
 }
