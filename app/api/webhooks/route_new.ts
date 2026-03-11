@@ -116,33 +116,37 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { locationId } = body;
 
+        // {
+        //   "type": "InboundMessage",
+        //   "locationId": "kF4NJ5gzRyQF2gKFD34G",
+        //   "body": "<div style=\"font-family: verdana, geneva; font-size: 11pt;\">Testing Email Notification</div>",
+        //   "contactId": "3bN9f8LYJFG8F232XMUbfq",
+        //   "conversationId": "yCdNo6pwyTLYKgg6V2gj",
+        //   "dateAdded": "2024-01-12T12:59:04.045Z",
+        //   "direction": "inbound",
+        //   "messageType": "Email",
+        //   "emailMessageId": "sddfDSF3G56GHG",
+        //   "from": "Internal Notify <sample@email.service>",
+        //   "threadId": "sddfDSF3G56GHG",
+        //   "subject": "Order Confirmed",
+        //   "to": "testprasath95@gmail.com",
+        //   "conversationProviderId": "cI08i1Bls3iTB9bKgF01"
+        // }
+
+
+        // console.log("Received GHL Inbound Message Webhook for location:", locationId);
+        // console.log("Incoming Webhook Body:", JSON.stringify(body, null, 2));
+
         if (!locationId) {
             return NextResponse.json({ message: "locationId missing" }, { status: 400 });
         }
 
-        if (body.direction !== "inbound" || body.messageType !== "Email") {
+
+        if (body.direction !== "inbound" && body.messageType !== "Email") {
+            console.log("Not an inbound email message, skipping processing");
             return NextResponse.json({ message: "Not an inbound email message" });
         }
 
-        // Forward to n8n when configured: app responds immediately, n8n handles DB + concurrency
-        const n8nWebhookUrl = "https://n8n.kleegr.com/webhook/3b7faef2-9e94-4d2c-8758-735e5f03c2e1";
-        if (n8nWebhookUrl) {
-            try {
-                await axios.post(n8nWebhookUrl, body, {
-                    headers: { "Content-Type": "application/json" },
-                    timeout: N8N_FORWARD_TIMEOUT_MS,
-                });
-            } catch (err: any) {
-                console.error("n8n forward failed:", err.message);
-                return NextResponse.json(
-                    { message: "Forward to n8n failed", error: err.message },
-                    { status: 502 }
-                );
-            }
-            return NextResponse.json({ message: "Forwarded to n8n" });
-        }
-
-        // Legacy path: process in-app (can 504 under load)
         // Fetch triggers
         const triggers = await prisma.trigger.findMany({
             where: {
